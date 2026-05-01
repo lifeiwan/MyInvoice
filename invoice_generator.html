@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HomeFix Pro — Invoice Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --ink: #1a1a18;
+    --paper: #f5f2eb;
+    --cream: #ede9df;
+    --rust: #b85c38;
+    --rust-light: #d4724e;
+    --gold: #c8952a;
+    --muted: #7a7468;
+    --border: #ccc7bb;
+    --white: #fdfcf9;
+  }
+  body { background: var(--paper); font-family: 'DM Mono', monospace; color: var(--ink); min-height: 100vh; }
+  .app-shell { display: grid; grid-template-columns: 400px 1fr; min-height: 100vh; }
+
+  /* LEFT PANEL */
+  .left-panel { background: var(--ink); padding: 32px 28px; display: flex; flex-direction: column; gap: 22px; overflow-y: auto; }
+  .brand { border-bottom: 1px solid #333; padding-bottom: 18px; }
+  .brand-label { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: #666; margin-bottom: 5px; }
+  .brand-name { font-family: 'DM Serif Display', serif; font-size: 20px; color: var(--paper); }
+  .brand-name em { color: var(--rust-light); font-style: italic; }
+  .section-title { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: #555; margin-bottom: 10px; }
+  .field-group { display: flex; flex-direction: column; gap: 9px; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: #888; }
+  .field input, .field textarea {
+    background: #242420; border: 1px solid #333; border-radius: 4px;
+    padding: 8px 11px; font-family: 'DM Mono', monospace; font-size: 12.5px;
+    color: var(--paper); outline: none; transition: border-color 0.2s; width: 100%;
+  }
+  .field input:focus, .field textarea:focus { border-color: var(--rust); }
+  .field input::placeholder, .field textarea::placeholder { color: #444; }
+  .field textarea { resize: vertical; min-height: 54px; }
+  .divider { height: 1px; background: #2a2a26; }
+  .line-items-header { display: flex; justify-content: space-between; align-items: center; }
+  .add-btn {
+    background: none; border: 1px solid #444; border-radius: 3px; color: var(--rust-light);
+    font-family: 'DM Mono', monospace; font-size: 11px; padding: 4px 10px; cursor: pointer;
+    letter-spacing: 0.05em; transition: all 0.15s;
+  }
+  .add-btn:hover { background: var(--rust); border-color: var(--rust); color: white; }
+  .line-item-row {
+    background: #1e1e1a; border: 1px solid #2e2e2a; border-radius: 6px;
+    padding: 11px; display: flex; flex-direction: column; gap: 7px;
+  }
+  .row-top { display: flex; gap: 7px; align-items: flex-start; }
+  .remove-btn { background: none; border: none; color: #555; cursor: pointer; font-size: 16px; padding: 2px 4px; line-height: 1; transition: color 0.15s; flex-shrink: 0; }
+  .remove-btn:hover { color: var(--rust); }
+  .li-input {
+    background: #111; border: 1px solid #333; border-radius: 3px;
+    padding: 6px 8px; font-family: 'DM Mono', monospace; font-size: 12px;
+    color: var(--paper); outline: none; transition: border-color 0.15s; width: 100%;
+  }
+  .li-input:focus { border-color: var(--rust); }
+  .line-subtotal { font-size: 10.5px; color: #555; text-align: right; }
+  .line-subtotal span { color: var(--gold); }
+  .tax-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .tax-row label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #888; white-space: nowrap; }
+  .export-btns { display: flex; gap: 10px; padding-top: 4px; }
+  .btn-primary {
+    flex: 1; background: var(--rust); border: none; border-radius: 5px; color: white;
+    font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.12em;
+    text-transform: uppercase; padding: 11px; cursor: pointer; transition: background 0.2s;
+  }
+  .btn-primary:hover { background: var(--rust-light); }
+  .btn-secondary {
+    flex: 1; background: none; border: 1px solid #444; border-radius: 5px; color: var(--paper);
+    font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.12em;
+    text-transform: uppercase; padding: 11px; cursor: pointer; transition: all 0.2s;
+  }
+  .btn-secondary:hover { border-color: var(--gold); color: var(--gold); }
+
+  /* RIGHT PANEL */
+  .right-panel { background: var(--cream); padding: 36px; display: flex; flex-direction: column; align-items: center; overflow-y: auto; }
+  .preview-label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-bottom: 22px; align-self: flex-start; }
+
+  /* INVOICE DOC */
+  .invoice-doc { background: var(--white); width: 100%; max-width: 660px; box-shadow: 0 4px 40px rgba(0,0,0,0.1); border-radius: 2px; overflow: hidden; }
+  .inv-header { background: var(--ink); padding: 32px 40px 28px; display: flex; justify-content: space-between; align-items: flex-start; }
+  .inv-brand-name { font-family: 'DM Serif Display', serif; font-size: 24px; color: var(--paper); line-height: 1; margin-bottom: 4px; }
+  .inv-brand-name em { color: var(--rust-light); font-style: italic; }
+  .inv-brand-sub { font-size: 9.5px; letter-spacing: 0.15em; color: #888; text-transform: uppercase; }
+  .inv-title { font-family: 'DM Serif Display', serif; font-size: 30px; color: var(--paper); text-align: right; }
+  .inv-number { font-size: 10.5px; color: var(--rust-light); letter-spacing: 0.1em; margin-top: 4px; text-align: right; }
+  .inv-meta-strip { background: var(--rust); display: flex; }
+  .inv-meta-cell { flex: 1; padding: 9px 18px; border-right: 1px solid rgba(255,255,255,0.15); }
+  .inv-meta-cell:last-child { border-right: none; }
+  .inv-meta-label { font-size: 8.5px; letter-spacing: 0.15em; text-transform: uppercase; color: rgba(255,255,255,0.6); margin-bottom: 2px; }
+  .inv-meta-value { font-size: 11.5px; color: white; }
+  .inv-body { padding: 32px 40px; display: flex; flex-direction: column; gap: 28px; }
+  .inv-parties { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+  .inv-party-label { font-size: 8.5px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 7px; border-bottom: 1px solid var(--border); padding-bottom: 5px; }
+  .inv-party-name { font-family: 'DM Serif Display', serif; font-size: 15px; color: var(--ink); margin-bottom: 4px; }
+  .inv-party-detail { font-size: 10.5px; color: var(--muted); line-height: 1.65; }
+  .inv-table { width: 100%; border-collapse: collapse; }
+  .inv-table thead tr { background: var(--ink); }
+  .inv-table thead th { font-size: 8.5px; letter-spacing: 0.15em; text-transform: uppercase; color: #aaa; padding: 10px 13px; text-align: left; font-weight: 400; }
+  .inv-table thead th:last-child { text-align: right; }
+  .inv-table tbody tr { border-bottom: 1px solid var(--cream); }
+  .inv-table tbody tr:last-child { border-bottom: none; }
+  .inv-table tbody td { padding: 11px 13px; font-size: 11.5px; color: var(--ink); vertical-align: top; }
+  .inv-table tbody td:last-child { text-align: right; color: var(--rust); font-weight: 500; }
+  .inv-subtotal-row td, .inv-tax-row td { color: var(--muted); font-size: 10.5px; padding: 7px 13px; }
+  .inv-subtotal-row td:last-child, .inv-tax-row td:last-child { text-align: right; color: var(--ink); }
+  .total-row { border-top: 2px solid var(--ink) !important; }
+  .total-row td { background: var(--ink); color: var(--paper) !important; font-family: 'DM Serif Display', serif; font-size: 14px !important; padding: 10px 13px !important; }
+  .total-row td:last-child { color: var(--rust-light) !important; text-align: right; }
+  .inv-footer { background: var(--cream); padding: 18px 40px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .inv-footer-note { font-size: 9.5px; color: var(--muted); max-width: 60%; }
+  .inv-footer-thanks { font-family: 'DM Serif Display', serif; font-style: italic; font-size: 14px; color: var(--rust); }
+  .empty-row td { color: #ccc !important; font-style: italic; font-size: 11px !important; text-align: center !important; }
+</style>
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- FORM PANEL -->
+  <div class="left-panel">
+    <div class="brand">
+      <div class="brand-label">Invoice Generator</div>
+      <div class="brand-name">Home<em>Fix</em> Pro</div>
+    </div>
+
+    <div>
+      <div class="section-title">Your Business</div>
+      <div class="field-group">
+        <div class="field"><label>Business Name</label><input type="text" id="biz-name" value="HomeFix Pro Services"></div>
+        <div class="field"><label>Address</label><input type="text" id="biz-address" value="123 Maple St, Vancouver, BC V6B 1A1"></div>
+        <div class="field"><label>Phone</label><input type="text" id="biz-phone" value="+1 (604) 555-0100"></div>
+        <div class="field"><label>Email</label><input type="text" id="biz-email" value="billing@homefixpro.ca"></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div>
+      <div class="section-title">Invoice Details</div>
+      <div class="field-group">
+        <div class="field"><label>Invoice #</label><input type="text" id="inv-number" value="INV-2026-0001"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">
+          <div class="field"><label>Issue Date</label><input type="date" id="inv-date"></div>
+          <div class="field"><label>Due Date</label><input type="date" id="due-date"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div>
+      <div class="section-title">Customer</div>
+      <div class="field-group">
+        <div class="field"><label>Full Name</label><input type="text" id="cust-name" placeholder="Jane Smith"></div>
+        <div class="field"><label>Address</label><input type="text" id="cust-address" placeholder="456 Oak Ave, Vancouver, BC"></div>
+        <div class="field"><label>Phone</label><input type="text" id="cust-phone" placeholder="+1 (604) 555-0199"></div>
+        <div class="field"><label>Email</label><input type="text" id="cust-email" placeholder="jane@email.com"></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div>
+      <div class="line-items-header">
+        <div class="section-title" style="margin:0">Work Items</div>
+        <button class="add-btn" onclick="addLineItem()">+ Add Item</button>
+      </div>
+      <div id="line-items" style="display:flex;flex-direction:column;gap:8px;margin-top:12px;"></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div>
+      <div class="section-title">Tax &amp; Notes</div>
+      <div class="tax-row">
+        <label>Tax Rate (%)</label>
+        <input type="number" id="tax-rate" class="li-input" value="5" min="0" max="100" step="0.5" style="width:80px;" oninput="updatePreview()">
+      </div>
+      <div class="field">
+        <label>Payment Note</label>
+        <textarea id="inv-note">Payment due within 30 days. E-transfer to billing@homefixpro.ca</textarea>
+      </div>
+    </div>
+
+    <div class="export-btns">
+      <button class="btn-primary" onclick="exportPDF()">&#8595; Export PDF</button>
+      <button class="btn-secondary" onclick="exportCSV()">&#8595; Export CSV</button>
+    </div>
+  </div>
+
+  <!-- PREVIEW PANEL -->
+  <div class="right-panel">
+    <div class="preview-label">Live Preview</div>
+    <div class="invoice-doc" id="invoice-preview">
+      <div class="inv-header">
+        <div>
+          <div class="inv-brand-name" id="prev-biz-name">HomeFix<em>Pro</em> Services</div>
+          <div class="inv-brand-sub">Home Maintenance Services</div>
+        </div>
+        <div>
+          <div class="inv-title">INVOICE</div>
+          <div class="inv-number" id="prev-inv-number">INV-2026-0001</div>
+        </div>
+      </div>
+      <div class="inv-meta-strip">
+        <div class="inv-meta-cell"><div class="inv-meta-label">Issue Date</div><div class="inv-meta-value" id="prev-date">—</div></div>
+        <div class="inv-meta-cell"><div class="inv-meta-label">Due Date</div><div class="inv-meta-value" id="prev-due">—</div></div>
+        <div class="inv-meta-cell"><div class="inv-meta-label">Status</div><div class="inv-meta-value">Unpaid</div></div>
+      </div>
+      <div class="inv-body">
+        <div class="inv-parties">
+          <div>
+            <div class="inv-party-label">From</div>
+            <div class="inv-party-name" id="prev-biz-from">HomeFix Pro Services</div>
+            <div class="inv-party-detail" id="prev-biz-detail"></div>
+          </div>
+          <div>
+            <div class="inv-party-label">Bill To</div>
+            <div class="inv-party-name" id="prev-cust-name">—</div>
+            <div class="inv-party-detail" id="prev-cust-detail">—</div>
+          </div>
+        </div>
+        <table class="inv-table">
+          <thead>
+            <tr>
+              <th style="width:42%">Description</th>
+              <th>Hours</th>
+              <th>Rate / hr</th>
+              <th>Amount</th>
+            </tr>
+          </thead>
+          <tbody id="prev-items">
+            <tr class="empty-row"><td colspan="4">No items yet — add work items on the left</td></tr>
+          </tbody>
+          <tfoot>
+            <tr class="inv-subtotal-row"><td colspan="3">Subtotal</td><td id="prev-subtotal">$0.00</td></tr>
+            <tr class="inv-tax-row"><td colspan="3">Tax (<span id="prev-tax-pct">5</span>%)</td><td id="prev-tax">$0.00</td></tr>
+            <tr class="total-row"><td colspan="3">Total Due</td><td id="prev-total">$0.00</td></tr>
+          </tfoot>
+        </table>
+      </div>
+      <div class="inv-footer">
+        <div class="inv-footer-note" id="prev-note"></div>
+        <div class="inv-footer-thanks">Thank you!</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Set default dates
+  const today = new Date();
+  const due = new Date(today);
+  due.setDate(due.getDate() + 30);
+  document.getElementById('inv-date').value = today.toISOString().split('T')[0];
+  document.getElementById('due-date').value = due.toISOString().split('T')[0];
+
+  let itemCount = 0;
+
+  function addLineItem(desc='', hours='', rate='') {
+    itemCount++;
+    const id = itemCount;
+    const container = document.getElementById('line-items');
+    const div = document.createElement('div');
+    div.className = 'line-item-row';
+    div.id = 'item-' + id;
+    div.innerHTML = `
+      <div class="row-top">
+        <input class="li-input" data-role="desc" placeholder="e.g. Plumbing repair" value="${desc}" oninput="updatePreview()">
+        <button class="remove-btn" onclick="removeItem(${id})">&#215;</button>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <input class="li-input" data-role="qty" type="number" placeholder="Hours" min="0" step="0.5" value="${hours}" oninput="calcSub(${id});updatePreview()">
+        <input class="li-input" data-role="rate" type="number" placeholder="$/hr" min="0" step="1" value="${rate}" oninput="calcSub(${id});updatePreview()">
+      </div>
+      <div class="line-subtotal" id="sub-${id}">Subtotal: <span>$0.00</span></div>
+    `;
+    container.appendChild(div);
+    calcSub(id);
+    updatePreview();
+  }
+
+  function removeItem(id) {
+    const el = document.getElementById('item-' + id);
+    if (el) el.remove();
+    updatePreview();
+  }
+
+  function calcSub(id) {
+    const row = document.getElementById('item-' + id);
+    if (!row) return;
+    const h = parseFloat(row.querySelector('[data-role="qty"]').value) || 0;
+    const r = parseFloat(row.querySelector('[data-role="rate"]').value) || 0;
+    row.querySelector('#sub-' + id + ' span').textContent = '$' + (h * r).toFixed(2);
+  }
+
+  function getItems() {
+    return Array.from(document.querySelectorAll('.line-item-row')).map(row => ({
+      desc: row.querySelector('[data-role="desc"]').value,
+      hours: parseFloat(row.querySelector('[data-role="qty"]').value) || 0,
+      rate: parseFloat(row.querySelector('[data-role="rate"]').value) || 0,
+    }));
+  }
+
+  function fmtDate(val) {
+    if (!val) return '—';
+    const [y, m, d] = val.split('-');
+    return d + '/' + m + '/' + y;
+  }
+
+  function updatePreview() {
+    const bizName = document.getElementById('biz-name').value || 'Your Business';
+    document.getElementById('prev-biz-name').textContent = bizName;
+    document.getElementById('prev-biz-from').textContent = bizName;
+    document.getElementById('prev-biz-detail').innerHTML =
+      (document.getElementById('biz-address').value || '') + '<br>' +
+      (document.getElementById('biz-phone').value || '') + '<br>' +
+      (document.getElementById('biz-email').value || '');
+    document.getElementById('prev-inv-number').textContent = document.getElementById('inv-number').value || '—';
+    document.getElementById('prev-date').textContent = fmtDate(document.getElementById('inv-date').value);
+    document.getElementById('prev-due').textContent = fmtDate(document.getElementById('due-date').value);
+
+    const custName = document.getElementById('cust-name').value;
+    document.getElementById('prev-cust-name').textContent = custName || '—';
+    document.getElementById('prev-cust-detail').innerHTML =
+      (document.getElementById('cust-address').value || '') + '<br>' +
+      (document.getElementById('cust-phone').value || '') + '<br>' +
+      (document.getElementById('cust-email').value || '');
+
+    const items = getItems();
+    const tbody = document.getElementById('prev-items');
+    if (items.length === 0) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="4">No items yet — add work items on the left</td></tr>';
+    } else {
+      tbody.innerHTML = items.map(it => {
+        const amt = it.hours * it.rate;
+        return '<tr><td>' + (it.desc || '<em style="color:#bbb">Unnamed item</em>') + '</td><td>' +
+          it.hours + ' hr' + (it.hours !== 1 ? 's' : '') + '</td><td>$' +
+          it.rate.toFixed(2) + '</td><td>$' + amt.toFixed(2) + '</td></tr>';
+      }).join('');
+    }
+
+    const subtotal = items.reduce((s, it) => s + it.hours * it.rate, 0);
+    const taxRate = parseFloat(document.getElementById('tax-rate').value) || 0;
+    const tax = subtotal * taxRate / 100;
+    document.getElementById('prev-subtotal').textContent = '$' + subtotal.toFixed(2);
+    document.getElementById('prev-tax-pct').textContent = taxRate;
+    document.getElementById('prev-tax').textContent = '$' + tax.toFixed(2);
+    document.getElementById('prev-total').textContent = '$' + (subtotal + tax).toFixed(2);
+    document.getElementById('prev-note').textContent = document.getElementById('inv-note').value || '';
+  }
+
+  document.querySelectorAll('input, textarea').forEach(el => el.addEventListener('input', updatePreview));
+
+  // Default items
+  addLineItem('Labour — General Maintenance', 3, 85);
+  addLineItem('Plumbing Repair', 1.5, 95);
+  updatePreview();
+
+  // ---- CSV EXPORT ----
+  function exportCSV() {
+    const items = getItems();
+    const taxRate = parseFloat(document.getElementById('tax-rate').value) || 0;
+    const subtotal = items.reduce((s, it) => s + it.hours * it.rate, 0);
+    const tax = subtotal * taxRate / 100;
+    const total = subtotal + tax;
+    const q = s => '"' + String(s).replace(/"/g, '""') + '"';
+    const rows = [
+      ['INVOICE'],
+      ['Invoice #', document.getElementById('inv-number').value],
+      ['Issue Date', document.getElementById('inv-date').value],
+      ['Due Date', document.getElementById('due-date').value],
+      [],
+      ['FROM'],
+      ['Business', document.getElementById('biz-name').value],
+      ['Address', document.getElementById('biz-address').value],
+      ['Phone', document.getElementById('biz-phone').value],
+      ['Email', document.getElementById('biz-email').value],
+      [],
+      ['BILL TO'],
+      ['Customer', document.getElementById('cust-name').value],
+      ['Address', document.getElementById('cust-address').value],
+      ['Phone', document.getElementById('cust-phone').value],
+      ['Email', document.getElementById('cust-email').value],
+      [],
+      ['WORK ITEMS'],
+      ['Description', 'Hours', 'Rate ($/hr)', 'Amount ($)'],
+      ...items.map(it => [it.desc, it.hours, it.rate.toFixed(2), (it.hours * it.rate).toFixed(2)]),
+      [],
+      ['Subtotal', '', '', subtotal.toFixed(2)],
+      ['Tax (' + taxRate + '%)', '', '', tax.toFixed(2)],
+      ['TOTAL DUE', '', '', total.toFixed(2)],
+      [],
+      ['Note', document.getElementById('inv-note').value],
+    ];
+    const csv = rows.map(r => r.map(c => q(c == null ? '' : c)).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (document.getElementById('inv-number').value || 'invoice') + '.csv';
+    a.click();
+  }
+
+  // ---- PDF EXPORT ----
+  function exportPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'pt', format: 'letter' });
+    const W = doc.internal.pageSize.getWidth();
+    const items = getItems();
+    const taxRate = parseFloat(document.getElementById('tax-rate').value) || 0;
+    const subtotal = items.reduce((s, it) => s + it.hours * it.rate, 0);
+    const tax = subtotal * taxRate / 100;
+    const total = subtotal + tax;
+
+    const INK = [26, 26, 24], RUST = [184, 92, 56], RUST_L = [212, 114, 78];
+    const PAPER = [245, 242, 235], MUTED = [122, 116, 104], CREAM = [237, 233, 223];
+
+    // Header
+    doc.setFillColor(...INK);
+    doc.rect(0, 0, W, 88, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(20);
+    doc.setTextColor(...PAPER);
+    doc.text(document.getElementById('biz-name').value || 'Your Business', 40, 36);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(150, 145, 138);
+    doc.text('HOME MAINTENANCE SERVICES', 40, 50);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(24);
+    doc.setTextColor(...PAPER);
+    doc.text('INVOICE', W - 40, 36, { align: 'right' });
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(...RUST_L);
+    doc.text(document.getElementById('inv-number').value || '', W - 40, 50, { align: 'right' });
+
+    // Meta strip
+    doc.setFillColor(...RUST);
+    doc.rect(0, 88, W, 30, 'F');
+    const metas = [['ISSUE DATE', fmtDate(document.getElementById('inv-date').value)], ['DUE DATE', fmtDate(document.getElementById('due-date').value)], ['STATUS', 'UNPAID']];
+    metas.forEach((m, i) => {
+      const x = 40 + i * (W - 80) / 3;
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(255, 255, 255);
+      doc.text(m[0], x, 100);
+      doc.setFontSize(11);
+      doc.text(m[1], x, 112);
+    });
+
+    // Parties
+    let y = 148;
+    doc.setFontSize(8); doc.setTextColor(...MUTED);
+    doc.text('FROM', 40, y); doc.text('BILL TO', W / 2 + 10, y);
+    doc.setDrawColor(...MUTED); doc.setLineWidth(0.5);
+    doc.line(40, y + 4, 260, y + 4); doc.line(W / 2 + 10, y + 4, W - 40, y + 4);
+    y += 15;
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(...INK);
+    doc.text(document.getElementById('biz-name').value || '', 40, y);
+    doc.text(document.getElementById('cust-name').value || '—', W / 2 + 10, y);
+    y += 13;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...MUTED);
+    const bl = [document.getElementById('biz-address').value, document.getElementById('biz-phone').value, document.getElementById('biz-email').value].filter(Boolean);
+    const cl = [document.getElementById('cust-address').value, document.getElementById('cust-phone').value, document.getElementById('cust-email').value].filter(Boolean);
+    for (let i = 0; i < Math.max(bl.length, cl.length); i++) {
+      if (bl[i]) doc.text(bl[i], 40, y);
+      if (cl[i]) doc.text(cl[i], W / 2 + 10, y);
+      y += 12;
+    }
+
+    // Table header
+    y += 16;
+    doc.setFillColor(...INK); doc.rect(0, y, W, 22, 'F');
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(160, 155, 145);
+    doc.text('DESCRIPTION', 40, y + 14);
+    doc.text('HOURS', 290, y + 14);
+    doc.text('RATE / HR', W - 160, y + 14, { align: 'right' });
+    doc.text('AMOUNT', W - 40, y + 14, { align: 'right' });
+    y += 22;
+
+    if (items.length === 0) {
+      doc.setTextColor(...MUTED); doc.setFontSize(10);
+      doc.text('No items', 40, y + 14); y += 24;
+    } else {
+      items.forEach((it, idx) => {
+        const amt = it.hours * it.rate;
+        if (idx % 2 === 0) { doc.setFillColor(...CREAM); doc.rect(0, y, W, 24, 'F'); }
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(...INK);
+        doc.text(it.desc || '', 40, y + 15, { maxWidth: 230 });
+        doc.text(it.hours + ' hr' + (it.hours !== 1 ? 's' : ''), 290, y + 15);
+        doc.text('$' + it.rate.toFixed(2), W - 160, y + 15, { align: 'right' });
+        doc.setTextColor(...RUST);
+        doc.text('$' + amt.toFixed(2), W - 40, y + 15, { align: 'right' });
+        y += 24;
+      });
+    }
+
+    // Totals
+    doc.setDrawColor(...INK); doc.setLineWidth(1); doc.line(0, y, W, y); y += 12;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5);
+    [['Subtotal', '$' + subtotal.toFixed(2)], ['Tax (' + taxRate + '%)', '$' + tax.toFixed(2)]].forEach(([l, v]) => {
+      doc.setTextColor(...MUTED); doc.text(l, W - 200, y);
+      doc.setTextColor(...INK); doc.text(v, W - 40, y, { align: 'right' }); y += 15;
+    });
+    y += 3;
+    doc.setFillColor(...INK); doc.rect(0, y - 3, W, 27, 'F');
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(13);
+    doc.setTextColor(...PAPER); doc.text('TOTAL DUE', W - 200, y + 13);
+    doc.setTextColor(...RUST_L); doc.text('$' + total.toFixed(2), W - 40, y + 13, { align: 'right' });
+    y += 30;
+
+    // Footer
+    y += 14;
+    doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(...MUTED);
+    const note = document.getElementById('inv-note').value;
+    if (note) doc.text(note, 40, y, { maxWidth: W - 180 });
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(...RUST);
+    doc.text('Thank you!', W - 40, y, { align: 'right' });
+
+    doc.save((document.getElementById('inv-number').value || 'invoice') + '.pdf');
+  }
+</script>
+</body>
+</html>
