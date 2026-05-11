@@ -638,9 +638,10 @@
     ];
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
+    const colLabel = col3 - 110;
     footerRows.forEach(([label, value]) => {
       doc.setTextColor(...DARK_GRAY);
-      doc.text(label, col3 - 4, y, { align: 'right' });
+      doc.text(label, colLabel, y, { align: 'right' });
       doc.setTextColor(...BLACK);
       doc.text(value, col3, y, { align: 'right' });
       y += 18;
@@ -655,7 +656,7 @@
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
     doc.setTextColor(...BLACK);
-    doc.text('Grand Total', col3 - 4, y, { align: 'right' });
+    doc.text('Grand Total', colLabel, y, { align: 'right' });
     doc.text('$' + grandTotal.toFixed(2), col3, y, { align: 'right' });
     y += 24;
 
