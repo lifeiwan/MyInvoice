@@ -331,7 +331,8 @@
   const CUST_KEY = 'invoice_customers';
 
   function loadCustomers() {
-    return JSON.parse(localStorage.getItem(CUST_KEY) || '[]');
+    try { return JSON.parse(localStorage.getItem(CUST_KEY) || '[]'); }
+    catch { return []; }
   }
 
   function saveCustomersToStorage(list) {
@@ -342,7 +343,7 @@
     const sel = document.getElementById('cust-saved');
     const customers = loadCustomers();
     sel.innerHTML = '<option value="">Select saved customer…</option>' +
-      customers.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+      customers.map(c => `<option value="${c.name.replace(/"/g, '&quot;')}">${c.name}</option>`).join('');
   }
 
   function saveCustomer() {
@@ -370,10 +371,10 @@
     if (!name) return;
     const customer = loadCustomers().find(c => c.name === name);
     if (!customer) return;
-    document.getElementById('cust-name').value = customer.name;
-    document.getElementById('cust-address').value = customer.address;
-    document.getElementById('cust-phone').value = customer.phone;
-    document.getElementById('cust-email').value = customer.email;
+    document.getElementById('cust-name').value = customer.name || '';
+    document.getElementById('cust-address').value = customer.address || '';
+    document.getElementById('cust-phone').value = customer.phone || '';
+    document.getElementById('cust-email').value = customer.email || '';
     updatePreview();
   }
 
