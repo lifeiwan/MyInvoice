@@ -163,11 +163,18 @@
 
     <div>
       <div class="section-title">Customer</div>
+      <div class="cust-actions">
+        <select id="cust-saved" onchange="loadCustomer()">
+          <option value="">Select saved customer…</option>
+        </select>
+        <button class="btn-small" onclick="saveCustomer()">Save</button>
+        <button class="btn-small danger" id="cust-delete-btn" onclick="deleteCustomer()" disabled>Delete</button>
+      </div>
       <div class="field-group">
-        <div class="field"><label>Full Name</label><input type="text" id="cust-name" placeholder="Jane Smith"></div>
-        <div class="field"><label>Address</label><input type="text" id="cust-address" placeholder="456 Oak Ave, Vancouver, BC"></div>
-        <div class="field"><label>Phone</label><input type="text" id="cust-phone" placeholder="+1 (604) 555-0199"></div>
-        <div class="field"><label>Email</label><input type="text" id="cust-email" placeholder="jane@email.com"></div>
+        <div class="field"><label>Full Name</label><input type="text" id="cust-name" placeholder="WeEducation Group Inc." oninput="updatePreview()"></div>
+        <div class="field"><label>Address</label><input type="text" id="cust-address" placeholder="1271 Broadway FL 2, New York, NY 10001" oninput="updatePreview()"></div>
+        <div class="field"><label>Phone</label><input type="text" id="cust-phone" placeholder="(833) 384-5777" oninput="updatePreview()"></div>
+        <div class="field"><label>Email</label><input type="text" id="cust-email" placeholder="" oninput="updatePreview()"></div>
       </div>
     </div>
 
