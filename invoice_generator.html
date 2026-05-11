@@ -452,19 +452,21 @@
   function exportCSV() {
     const items = getItems();
     const taxRate = parseFloat(document.getElementById('tax-rate').value) || 0;
-    const subtotal = items.reduce((s, it) => s + it.hours * it.rate, 0);
+    const subtotal = items.reduce((s, it) => s + it.amount, 0);
     const tax = subtotal * taxRate / 100;
-    const total = subtotal + tax;
-    const q = s => '"' + String(s).replace(/"/g, '""') + '"';
+    const tips = parseFloat(document.getElementById('tips').value) || 0;
+    const supplies = parseFloat(document.getElementById('supplies').value) || 0;
+    const grandTotal = subtotal + tax + tips + supplies;
+    const q = s => '"' + String(s == null ? '' : s).replace(/"/g, '""') + '"';
     const rows = [
       ['INVOICE'],
       ['Invoice #', document.getElementById('inv-number').value],
-      ['Issue Date', document.getElementById('inv-date').value],
-      ['Due Date', document.getElementById('due-date').value],
+      ['Date', fmtDate(document.getElementById('inv-date').value)],
       [],
       ['FROM'],
       ['Business', document.getElementById('biz-name').value],
       ['Address', document.getElementById('biz-address').value],
+      ['Contact', document.getElementById('biz-contact').value],
       ['Phone', document.getElementById('biz-phone').value],
       ['Email', document.getElementById('biz-email').value],
       [],
@@ -474,17 +476,17 @@
       ['Phone', document.getElementById('cust-phone').value],
       ['Email', document.getElementById('cust-email').value],
       [],
-      ['WORK ITEMS'],
-      ['Description', 'Hours', 'Rate ($/hr)', 'Amount ($)'],
-      ...items.map(it => [it.desc, it.hours, it.rate.toFixed(2), (it.hours * it.rate).toFixed(2)]),
+      ['DATE', 'DESCRIPTION', 'AMOUNT'],
+      ...items.map(it => [fmtDate(it.date), it.desc, it.amount.toFixed(2)]),
       [],
-      ['Subtotal', '', '', subtotal.toFixed(2)],
-      ['Tax (' + taxRate + '%)', '', '', tax.toFixed(2)],
-      ['TOTAL DUE', '', '', total.toFixed(2)],
+      ['Tax (' + taxRate + '%)', '', tax.toFixed(2)],
+      ...(tips > 0     ? [['Tips', '', tips.toFixed(2)]] : []),
+      ...(supplies > 0 ? [['Cleaning Supplies', '', supplies.toFixed(2)]] : []),
+      ['Grand Total', '', grandTotal.toFixed(2)],
       [],
-      ['Note', document.getElementById('inv-note').value],
+      ['Remarks', document.getElementById('inv-note').value],
     ];
-    const csv = rows.map(r => r.map(c => q(c == null ? '' : c)).join(',')).join('\n');
+    const csv = rows.map(r => r.map(q).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
