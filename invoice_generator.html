@@ -134,12 +134,18 @@
     </div>
 
     <div>
-      <div class="section-title">Your Business</div>
-      <div class="field-group">
-        <div class="field"><label>Business Name</label><input type="text" id="biz-name" value="HomeFix Pro Services"></div>
-        <div class="field"><label>Address</label><input type="text" id="biz-address" value="123 Maple St, Vancouver, BC V6B 1A1"></div>
-        <div class="field"><label>Phone</label><input type="text" id="biz-phone" value="+1 (604) 555-0100"></div>
-        <div class="field"><label>Email</label><input type="text" id="biz-email" value="billing@homefixpro.ca"></div>
+      <div class="section-toggle" onclick="toggleSection('biz-section', this)">
+        <div class="section-title" style="margin:0">Your Business</div>
+        <span class="toggle-arrow">&#9654;</span>
+      </div>
+      <div class="collapsible-content" id="biz-section">
+        <div class="field-group">
+          <div class="field"><label>Business Name</label><input type="text" id="biz-name" value="C&amp;C ROYAL SERVICE INC." oninput="updatePreview()"></div>
+          <div class="field"><label>Address</label><input type="text" id="biz-address" value="75-08 Bell Blvd, Bayside, NY 11364" oninput="updatePreview()"></div>
+          <div class="field"><label>Contact Name</label><input type="text" id="biz-contact" value="Wendy Chiu" oninput="updatePreview()"></div>
+          <div class="field"><label>Phone</label><input type="text" id="biz-phone" value="917-518-1718" oninput="updatePreview()"></div>
+          <div class="field"><label>Email</label><input type="text" id="biz-email" value="ccroyalservice@gmail.com" oninput="updatePreview()"></div>
+        </div>
       </div>
     </div>
 
@@ -148,11 +154,8 @@
     <div>
       <div class="section-title">Invoice Details</div>
       <div class="field-group">
-        <div class="field"><label>Invoice #</label><input type="text" id="inv-number" value="INV-2026-0001"></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">
-          <div class="field"><label>Issue Date</label><input type="date" id="inv-date"></div>
-          <div class="field"><label>Due Date</label><input type="date" id="due-date"></div>
-        </div>
+        <div class="field"><label>Invoice #</label><input type="text" id="inv-number" placeholder="e.g. WE041326" oninput="updatePreview()"></div>
+        <div class="field"><label>Invoice Date</label><input type="date" id="inv-date" oninput="updatePreview()"></div>
       </div>
     </div>
 
