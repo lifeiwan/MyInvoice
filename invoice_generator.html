@@ -327,6 +327,66 @@
     toggle.classList.toggle('open', isOpen);
   }
 
+  // ---- CUSTOMER SAVE / LOAD / DELETE ----
+  const CUST_KEY = 'invoice_customers';
+
+  function loadCustomers() {
+    return JSON.parse(localStorage.getItem(CUST_KEY) || '[]');
+  }
+
+  function saveCustomersToStorage(list) {
+    localStorage.setItem(CUST_KEY, JSON.stringify(list));
+  }
+
+  function populateDropdown() {
+    const sel = document.getElementById('cust-saved');
+    const customers = loadCustomers();
+    sel.innerHTML = '<option value="">Select saved customer…</option>' +
+      customers.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+  }
+
+  function saveCustomer() {
+    const name = document.getElementById('cust-name').value.trim();
+    if (!name) { alert('Enter a customer name first.'); return; }
+    const customer = {
+      name,
+      address: document.getElementById('cust-address').value,
+      phone: document.getElementById('cust-phone').value,
+      email: document.getElementById('cust-email').value,
+    };
+    const list = loadCustomers();
+    const idx = list.findIndex(c => c.name === name);
+    if (idx >= 0) list[idx] = customer; else list.push(customer);
+    saveCustomersToStorage(list);
+    populateDropdown();
+    document.getElementById('cust-saved').value = name;
+    document.getElementById('cust-delete-btn').disabled = false;
+  }
+
+  function loadCustomer() {
+    const sel = document.getElementById('cust-saved');
+    const name = sel.value;
+    document.getElementById('cust-delete-btn').disabled = !name;
+    if (!name) return;
+    const customer = loadCustomers().find(c => c.name === name);
+    if (!customer) return;
+    document.getElementById('cust-name').value = customer.name;
+    document.getElementById('cust-address').value = customer.address;
+    document.getElementById('cust-phone').value = customer.phone;
+    document.getElementById('cust-email').value = customer.email;
+    updatePreview();
+  }
+
+  function deleteCustomer() {
+    const sel = document.getElementById('cust-saved');
+    const name = sel.value;
+    if (!name) return;
+    if (!confirm('Delete saved customer "' + name + '"?')) return;
+    saveCustomersToStorage(loadCustomers().filter(c => c.name !== name));
+    populateDropdown();
+    document.getElementById('cust-delete-btn').disabled = true;
+  }
+
   function updatePreview() {
     // Business
     document.getElementById('prev-biz-name').textContent = document.getElementById('biz-name').value || 'Your Business';
@@ -383,6 +443,7 @@
     document.getElementById('prev-remarks').textContent = document.getElementById('inv-note').value || '';
   }
 
+  populateDropdown();
   addLineItem();
   updatePreview();
 
