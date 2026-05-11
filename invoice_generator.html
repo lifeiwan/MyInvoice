@@ -328,52 +328,62 @@
   }
 
   function updatePreview() {
-    const bizName = document.getElementById('biz-name').value || 'Your Business';
-    document.getElementById('prev-biz-name').textContent = bizName;
-    document.getElementById('prev-biz-from').textContent = bizName;
-    document.getElementById('prev-biz-detail').innerHTML =
-      (document.getElementById('biz-address').value || '') + '<br>' +
-      (document.getElementById('biz-phone').value || '') + '<br>' +
-      (document.getElementById('biz-email').value || '');
+    // Business
+    document.getElementById('prev-biz-name').textContent = document.getElementById('biz-name').value || 'Your Business';
+    document.getElementById('prev-biz-address').textContent = document.getElementById('biz-address').value || '';
+    document.getElementById('prev-biz-contact').textContent = document.getElementById('biz-contact').value || '';
+    document.getElementById('prev-biz-phone').textContent = document.getElementById('biz-phone').value || '';
+    document.getElementById('prev-biz-email').textContent = document.getElementById('biz-email').value || '';
+
+    // Invoice details
     document.getElementById('prev-inv-number').textContent = document.getElementById('inv-number').value || '—';
     document.getElementById('prev-date').textContent = fmtDate(document.getElementById('inv-date').value);
-    document.getElementById('prev-due').textContent = fmtDate(document.getElementById('due-date').value);
 
-    const custName = document.getElementById('cust-name').value;
-    document.getElementById('prev-cust-name').textContent = custName || '—';
-    document.getElementById('prev-cust-detail').innerHTML =
-      (document.getElementById('cust-address').value || '') + '<br>' +
-      (document.getElementById('cust-phone').value || '') + '<br>' +
-      (document.getElementById('cust-email').value || '');
+    // Customer
+    document.getElementById('prev-cust-name').textContent = document.getElementById('cust-name').value || '—';
+    const custParts = [];
+    if (document.getElementById('cust-address').value) custParts.push(document.getElementById('cust-address').value);
+    if (document.getElementById('cust-phone').value) custParts.push('TEL: ' + document.getElementById('cust-phone').value);
+    if (document.getElementById('cust-email').value) custParts.push(document.getElementById('cust-email').value);
+    document.getElementById('prev-cust-detail').innerHTML = custParts.join('<br>');
 
+    // Line items
     const items = getItems();
     const tbody = document.getElementById('prev-items');
     if (items.length === 0) {
-      tbody.innerHTML = '<tr class="empty-row"><td colspan="4">No items yet — add work items on the left</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#bbb;font-style:italic;padding:18px 16px">No items yet — add work items on the left</td></tr>';
     } else {
-      tbody.innerHTML = items.map(it => {
-        const amt = it.hours * it.rate;
-        return '<tr><td>' + (it.desc || '<em style="color:#bbb">Unnamed item</em>') + '</td><td>' +
-          it.hours + ' hr' + (it.hours !== 1 ? 's' : '') + '</td><td>$' +
-          it.rate.toFixed(2) + '</td><td>$' + amt.toFixed(2) + '</td></tr>';
-      }).join('');
+      tbody.innerHTML = items.map(it =>
+        '<tr><td>' + fmtDate(it.date) + '</td><td>' +
+        (it.desc || '<em style="color:#bbb">Unnamed item</em>') +
+        '</td><td>$' + it.amount.toFixed(2) + '</td></tr>'
+      ).join('');
     }
 
-    const subtotal = items.reduce((s, it) => s + it.hours * it.rate, 0);
+    // Totals
+    const subtotal = items.reduce((s, it) => s + it.amount, 0);
     const taxRate = parseFloat(document.getElementById('tax-rate').value) || 0;
     const tax = subtotal * taxRate / 100;
-    document.getElementById('prev-subtotal').textContent = '$' + subtotal.toFixed(2);
+    const tips = parseFloat(document.getElementById('tips').value) || 0;
+    const supplies = parseFloat(document.getElementById('supplies').value) || 0;
+    const grandTotal = subtotal + tax + tips + supplies;
+
     document.getElementById('prev-tax-pct').textContent = taxRate;
     document.getElementById('prev-tax').textContent = '$' + tax.toFixed(2);
-    document.getElementById('prev-total').textContent = '$' + (subtotal + tax).toFixed(2);
-    document.getElementById('prev-note').textContent = document.getElementById('inv-note').value || '';
+
+    const tipsRow = document.getElementById('prev-tips-row');
+    tipsRow.style.display = tips > 0 ? '' : 'none';
+    document.getElementById('prev-tips').textContent = '$' + tips.toFixed(2);
+
+    const suppliesRow = document.getElementById('prev-supplies-row');
+    suppliesRow.style.display = supplies > 0 ? '' : 'none';
+    document.getElementById('prev-supplies').textContent = '$' + supplies.toFixed(2);
+
+    document.getElementById('prev-grand-total').textContent = '$' + grandTotal.toFixed(2);
+    document.getElementById('prev-remarks').textContent = document.getElementById('inv-note').value || '';
   }
 
-  document.querySelectorAll('input, textarea').forEach(el => el.addEventListener('input', updatePreview));
-
-  // Default items
-  addLineItem('Labour — General Maintenance', 3, 85);
-  addLineItem('Plumbing Repair', 1.5, 95);
+  addLineItem();
   updatePreview();
 
   // ---- CSV EXPORT ----
