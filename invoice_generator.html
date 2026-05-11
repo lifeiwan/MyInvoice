@@ -222,59 +222,54 @@
   <!-- PREVIEW PANEL -->
   <div class="right-panel">
     <div class="preview-label">Live Preview</div>
-    <div class="invoice-doc" id="invoice-preview">
-      <div class="inv-header">
-        <div>
-          <div class="inv-brand-name" id="prev-biz-name">HomeFix<em>Pro</em> Services</div>
-          <div class="inv-brand-sub">Home Maintenance Services</div>
-        </div>
-        <div>
-          <div class="inv-title">INVOICE</div>
-          <div class="inv-number" id="prev-inv-number">INV-2026-0001</div>
-        </div>
-      </div>
-      <div class="inv-meta-strip">
-        <div class="inv-meta-cell"><div class="inv-meta-label">Issue Date</div><div class="inv-meta-value" id="prev-date">—</div></div>
-        <div class="inv-meta-cell"><div class="inv-meta-label">Due Date</div><div class="inv-meta-value" id="prev-due">—</div></div>
-        <div class="inv-meta-cell"><div class="inv-meta-label">Status</div><div class="inv-meta-value">Unpaid</div></div>
-      </div>
-      <div class="inv-body">
-        <div class="inv-parties">
+      <div class="invoice-doc" id="invoice-preview">
+        <!-- Header -->
+        <div class="inv-header">
           <div>
-            <div class="inv-party-label">From</div>
-            <div class="inv-party-name" id="prev-biz-from">HomeFix Pro Services</div>
-            <div class="inv-party-detail" id="prev-biz-detail"></div>
+            <div class="inv-company-name" id="prev-biz-name">C&amp;C ROYAL SERVICE INC.</div>
+            <div class="inv-company-info">
+              <span id="prev-biz-address">75-08 Bell Blvd, Bayside, NY 11364</span><br>
+              Contact: <span id="prev-biz-contact">Wendy Chiu</span><br>
+              TEL: <span id="prev-biz-phone">917-518-1718</span><br>
+              Email: <span id="prev-biz-email">ccroyalservice@gmail.com</span>
+            </div>
           </div>
-          <div>
-            <div class="inv-party-label">Bill To</div>
-            <div class="inv-party-name" id="prev-cust-name">—</div>
-            <div class="inv-party-detail" id="prev-cust-detail">—</div>
+          <div class="inv-title-block">
+            <div class="inv-doc-title">SERVICE INVOICE</div>
+            <div class="inv-meta">
+              Invoice No. <span id="prev-inv-number">—</span><br>
+              <span id="prev-date">—</span>
+            </div>
           </div>
         </div>
+        <!-- Bill To -->
+        <div class="inv-bill-to">
+          <div class="inv-bill-label">Bill To</div>
+          <div class="inv-bill-name" id="prev-cust-name">—</div>
+          <div class="inv-bill-detail" id="prev-cust-detail"></div>
+        </div>
+        <!-- Line items table -->
         <table class="inv-table">
           <thead>
             <tr>
-              <th style="width:42%">Description</th>
-              <th>Hours</th>
-              <th>Rate / hr</th>
-              <th>Amount</th>
+              <th style="width:26%">Date</th>
+              <th>Description</th>
+              <th style="width:20%">Amount</th>
             </tr>
           </thead>
           <tbody id="prev-items">
-            <tr class="empty-row"><td colspan="4">No items yet — add work items on the left</td></tr>
+            <tr><td colspan="3" style="text-align:center;color:#bbb;font-style:italic;padding:18px 16px">No items yet — add work items on the left</td></tr>
           </tbody>
           <tfoot>
-            <tr class="inv-subtotal-row"><td colspan="3">Subtotal</td><td id="prev-subtotal">$0.00</td></tr>
-            <tr class="inv-tax-row"><td colspan="3">Tax (<span id="prev-tax-pct">5</span>%)</td><td id="prev-tax">$0.00</td></tr>
-            <tr class="total-row"><td colspan="3">Total Due</td><td id="prev-total">$0.00</td></tr>
+            <tr><td colspan="2">Tax (<span id="prev-tax-pct">5</span>%)</td><td id="prev-tax">$0.00</td></tr>
+            <tr id="prev-tips-row" style="display:none"><td colspan="2">Tips</td><td id="prev-tips">$0.00</td></tr>
+            <tr id="prev-supplies-row" style="display:none"><td colspan="2">Cleaning Supplies</td><td id="prev-supplies">$0.00</td></tr>
+            <tr class="inv-grand-total"><td colspan="2">Grand Total</td><td id="prev-grand-total">$0.00</td></tr>
           </tfoot>
         </table>
+        <!-- Remarks -->
+        <div class="inv-remarks" id="prev-remarks"></div>
       </div>
-      <div class="inv-footer">
-        <div class="inv-footer-note" id="prev-note"></div>
-        <div class="inv-footer-thanks">Thank you!</div>
-      </div>
-    </div>
   </div>
 </div>
 
