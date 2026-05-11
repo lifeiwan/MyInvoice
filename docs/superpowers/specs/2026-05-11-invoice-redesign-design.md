@@ -7,7 +7,7 @@
 
 ## Overview
 
-Redesign the invoice generator to match the C&C Royal Service sample invoice format (clean minimal style), update line items to a date-based flat-fee structure, add Tips and Cleaning Supplies rows, and implement a save/load customer feature backed by localStorage.
+Redesign the invoice generator to match the C&C Royal Service sample invoice format (clean minimal style), update line items to a date-based flat-fee structure, add Tips and Cleaning Supplies rows, implement a save/load/delete customer feature backed by localStorage, and reserve a placeholder Send Email button for future EmailJS integration.
 
 ---
 
@@ -47,7 +47,8 @@ Each row: a date (MM/DD/YYYY), a description, and a flat dollar amount.
 | Cleaning Supplies *(hidden if $0)* | $X.XX |
 | **Grand Total** | **$X.XX** |
 
-Grand Total = sum of line items + tax + tips + cleaning supplies.
+Grand Total = sum of line items + tax + tips + cleaning supplies.  
+Tips and Cleaning Supplies rows are completely hidden (not rendered) when their value is $0.
 
 ### Remarks
 Payment instructions text shown below the table.
@@ -56,20 +57,24 @@ Payment instructions text shown below the table.
 
 ## Form Panel Fields
 
-### Your Business
-- Business Name
-- Address
-- Contact Name *(new field)*
-- Phone
-- Email
+### Your Business *(collapsible, collapsed by default)*
+Pre-filled with C&C Royal Service defaults:
+- Business Name: `C&C ROYAL SERVICE INC.`
+- Address: `75-08 Bell Blvd, Bayside, NY 11364`
+- Contact Name: `Wendy Chiu`
+- Phone: `917-518-1718`
+- Email: `ccroyalservice@gmail.com`
+
+Section is collapsed by default (click to expand) since this data rarely changes. A collapse toggle shows the business name as a summary when folded.
 
 ### Invoice Details
-- Invoice #
-- Invoice Date (single date, not issue+due)
+- Invoice # — default empty, user types (e.g. WE041326)
+- Invoice Date — date picker, default today
 
 ### Customer
-- **Saved Customers dropdown** — lists saved names; selecting auto-fills fields below
+- **Saved Customers dropdown** — lists saved customer names; selecting auto-fills all four fields below
 - **Save Customer button** — saves/overwrites current customer by name in localStorage
+- **Delete button** — removes the currently selected saved customer (only active when a saved customer is selected)
 - Full Name
 - Address
 - Phone
@@ -77,28 +82,31 @@ Payment instructions text shown below the table.
 
 ### Work Items
 Each line item row: **Date picker | Description | Amount**  
-(replaces Hours + Rate/hr)
+- Date picker defaults to today's date
+- Description defaults to `Cleaning Service`
+- Amount: flat dollar input
 
 ### Tax & Extras
-- Tax Rate (%)
-- Tips ($) — input field; row hidden in preview/PDF when $0
-- Cleaning Supplies ($) — input field; row hidden in preview/PDF when $0
+- Tax Rate (%) — default 5%
+- Tips ($) — input, default 0; row hidden in preview/PDF when $0
+- Cleaning Supplies ($) — input, default 0; row hidden in preview/PDF when $0
 
 ### Remarks
 Payment instructions textarea.
 
-### Export Buttons
-- Export PDF
-- Export CSV
+### Export / Action Buttons
+- **Export PDF** — generates and downloads the invoice as PDF
+- **Export CSV** — downloads invoice data as CSV
+- **Send Email** *(placeholder, disabled)* — reserved for future EmailJS integration; shown as a grayed-out button with tooltip "Coming soon"
 
 ---
 
 ## Customer Save Feature
 
 - Storage: `localStorage` key `invoice_customers` → JSON array of `{name, address, phone, email}`
-- **Save Customer**: stores current customer fields; if name already exists, overwrites it
-- **Dropdown**: populated from saved list; placeholder "Select saved customer…"; selecting an entry auto-fills the four customer fields
-- No delete UI in this version (YAGNI)
+- **Save Customer**: stores/overwrites entry matching current customer name
+- **Dropdown**: placeholder "Select saved customer…"; selecting auto-fills the four customer fields and activates the Delete button
+- **Delete**: removes the selected customer from localStorage and clears the dropdown selection
 
 ---
 
@@ -116,13 +124,19 @@ jsPDF-rendered PDF matches the invoice preview layout exactly:
 
 ## CSV Export
 
-Columns updated to: Date, Description, Amount  
+Columns: Date, Description, Amount  
 Footer rows: Tax, Tips (if >0), Cleaning Supplies (if >0), Grand Total
+
+---
+
+## Future: Email Feature
+
+A "Send Email" button is reserved in the UI. Future implementation will use **EmailJS** (browser-side email API, free tier 200/month) to send the generated PDF as a base64 attachment. Requires user to provide an EmailJS API key and template ID — to be configured when implemented.
 
 ---
 
 ## Out of Scope
 
-- Customer delete/edit UI
+- Customer edit UI (save overwrites, delete removes)
 - Multiple saved business profiles
 - Cloud sync
