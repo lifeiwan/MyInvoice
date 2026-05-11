@@ -497,117 +497,176 @@
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit: 'pt', format: 'letter' });
     const W = doc.internal.pageSize.getWidth();
+    const MARGIN = 40;
+
     const items = getItems();
     const taxRate = parseFloat(document.getElementById('tax-rate').value) || 0;
-    const subtotal = items.reduce((s, it) => s + it.hours * it.rate, 0);
+    const subtotal = items.reduce((s, it) => s + it.amount, 0);
     const tax = subtotal * taxRate / 100;
-    const total = subtotal + tax;
+    const tips = parseFloat(document.getElementById('tips').value) || 0;
+    const supplies = parseFloat(document.getElementById('supplies').value) || 0;
+    const grandTotal = subtotal + tax + tips + supplies;
 
-    const INK = [26, 26, 24], RUST = [184, 92, 56], RUST_L = [212, 114, 78];
-    const PAPER = [245, 242, 235], MUTED = [122, 116, 104], CREAM = [237, 233, 223];
+    const bizName    = document.getElementById('biz-name').value;
+    const bizAddress = document.getElementById('biz-address').value;
+    const bizContact = document.getElementById('biz-contact').value;
+    const bizPhone   = document.getElementById('biz-phone').value;
+    const bizEmail   = document.getElementById('biz-email').value;
+    const invNumber  = document.getElementById('inv-number').value;
+    const invDate    = fmtDate(document.getElementById('inv-date').value);
+    const custName   = document.getElementById('cust-name').value;
+    const custAddress= document.getElementById('cust-address').value;
+    const custPhone  = document.getElementById('cust-phone').value;
+    const custEmail  = document.getElementById('cust-email').value;
+    const note       = document.getElementById('inv-note').value;
 
-    // Header
-    doc.setFillColor(...INK);
-    doc.rect(0, 0, W, 88, 'F');
+    const BLACK      = [0, 0, 0];
+    const DARK_GRAY  = [80, 80, 80];
+    const MID_GRAY   = [130, 130, 130];
+    const LIGHT_GRAY = [200, 200, 200];
+    const BG_GRAY    = [245, 245, 245];
+
+    let leftY = MARGIN;
+    let rightY = MARGIN;
+
+    // Company name (left)
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(20);
-    doc.setTextColor(...PAPER);
-    doc.text(document.getElementById('biz-name').value || 'Your Business', 40, 36);
+    doc.setFontSize(13);
+    doc.setTextColor(...BLACK);
+    doc.text(bizName || 'Your Business', MARGIN, leftY);
+    leftY += 17;
+
+    // SERVICE INVOICE (right)
+    doc.setFontSize(15);
+    doc.text('SERVICE INVOICE', W - MARGIN, rightY, { align: 'right' });
+    rightY += 22;
+
+    // Company info lines (left)
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.5);
-    doc.setTextColor(150, 145, 138);
-    doc.text('HOME MAINTENANCE SERVICES', 40, 50);
+    doc.setFontSize(9);
+    doc.setTextColor(...DARK_GRAY);
+    if (bizAddress) { doc.text(bizAddress, MARGIN, leftY); leftY += 13; }
+    if (bizContact) { doc.text('Contact: ' + bizContact, MARGIN, leftY); leftY += 13; }
+    if (bizPhone)   { doc.text('TEL: ' + bizPhone, MARGIN, leftY); leftY += 13; }
+    if (bizEmail)   { doc.text('Email: ' + bizEmail, MARGIN, leftY); leftY += 13; }
+
+    // Invoice meta (right)
+    doc.setFontSize(9);
+    doc.setTextColor(...DARK_GRAY);
+    if (invNumber) { doc.text('Invoice No. ' + invNumber, W - MARGIN, rightY, { align: 'right' }); rightY += 13; }
+    doc.text(invDate, W - MARGIN, rightY, { align: 'right' });
+
+    let y = Math.max(leftY, rightY) + 10;
+
+    // Header divider
+    doc.setDrawColor(...BLACK);
+    doc.setLineWidth(1.5);
+    doc.line(MARGIN, y, W - MARGIN, y);
+    y += 16;
+
+    // Bill To
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(24);
-    doc.setTextColor(...PAPER);
-    doc.text('INVOICE', W - 40, 36, { align: 'right' });
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.setTextColor(...RUST_L);
-    doc.text(document.getElementById('inv-number').value || '', W - 40, 50, { align: 'right' });
-
-    // Meta strip
-    doc.setFillColor(...RUST);
-    doc.rect(0, 88, W, 30, 'F');
-    const metas = [['ISSUE DATE', fmtDate(document.getElementById('inv-date').value)], ['DUE DATE', fmtDate(document.getElementById('due-date').value)], ['STATUS', 'UNPAID']];
-    metas.forEach((m, i) => {
-      const x = 40 + i * (W - 80) / 3;
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(255, 255, 255);
-      doc.text(m[0], x, 100);
-      doc.setFontSize(11);
-      doc.text(m[1], x, 112);
-    });
-
-    // Parties
-    let y = 148;
-    doc.setFontSize(8); doc.setTextColor(...MUTED);
-    doc.text('FROM', 40, y); doc.text('BILL TO', W / 2 + 10, y);
-    doc.setDrawColor(...MUTED); doc.setLineWidth(0.5);
-    doc.line(40, y + 4, 260, y + 4); doc.line(W / 2 + 10, y + 4, W - 40, y + 4);
-    y += 15;
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(...INK);
-    doc.text(document.getElementById('biz-name').value || '', 40, y);
-    doc.text(document.getElementById('cust-name').value || '—', W / 2 + 10, y);
+    doc.setFontSize(8);
+    doc.setTextColor(...MID_GRAY);
+    doc.text('BILL TO', MARGIN, y);
     y += 13;
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...MUTED);
-    const bl = [document.getElementById('biz-address').value, document.getElementById('biz-phone').value, document.getElementById('biz-email').value].filter(Boolean);
-    const cl = [document.getElementById('cust-address').value, document.getElementById('cust-phone').value, document.getElementById('cust-email').value].filter(Boolean);
-    for (let i = 0; i < Math.max(bl.length, cl.length); i++) {
-      if (bl[i]) doc.text(bl[i], 40, y);
-      if (cl[i]) doc.text(cl[i], W / 2 + 10, y);
-      y += 12;
-    }
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(...BLACK);
+    doc.text(custName || '—', MARGIN, y);
+    y += 14;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(...DARK_GRAY);
+    if (custAddress) { doc.text(custAddress, MARGIN, y); y += 12; }
+    if (custPhone)   { doc.text('TEL: ' + custPhone, MARGIN, y); y += 12; }
+    if (custEmail)   { doc.text(custEmail, MARGIN, y); y += 12; }
+    y += 10;
 
     // Table header
-    y += 16;
-    doc.setFillColor(...INK); doc.rect(0, y, W, 22, 'F');
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(160, 155, 145);
-    doc.text('DESCRIPTION', 40, y + 14);
-    doc.text('HOURS', 290, y + 14);
-    doc.text('RATE / HR', W - 160, y + 14, { align: 'right' });
-    doc.text('AMOUNT', W - 40, y + 14, { align: 'right' });
+    doc.setFillColor(...BG_GRAY);
+    doc.rect(MARGIN, y, W - MARGIN * 2, 22, 'F');
+    doc.setDrawColor(...LIGHT_GRAY);
+    doc.setLineWidth(0.5);
+    doc.line(MARGIN, y, W - MARGIN, y);
+    doc.line(MARGIN, y + 22, W - MARGIN, y + 22);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(...MID_GRAY);
+
+    const col1 = MARGIN + 4;
+    const col2 = MARGIN + 155;
+    const col3 = W - MARGIN - 4;
+
+    doc.text('DATE', col1, y + 14);
+    doc.text('DESCRIPTION', col2, y + 14);
+    doc.text('AMOUNT', col3, y + 14, { align: 'right' });
     y += 22;
 
+    // Table rows
     if (items.length === 0) {
-      doc.setTextColor(...MUTED); doc.setFontSize(10);
-      doc.text('No items', 40, y + 14); y += 24;
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(9);
+      doc.setTextColor(...MID_GRAY);
+      doc.text('No items', col1, y + 14);
+      y += 24;
     } else {
       items.forEach((it, idx) => {
-        const amt = it.hours * it.rate;
-        if (idx % 2 === 0) { doc.setFillColor(...CREAM); doc.rect(0, y, W, 24, 'F'); }
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(...INK);
-        doc.text(it.desc || '', 40, y + 15, { maxWidth: 230 });
-        doc.text(it.hours + ' hr' + (it.hours !== 1 ? 's' : ''), 290, y + 15);
-        doc.text('$' + it.rate.toFixed(2), W - 160, y + 15, { align: 'right' });
-        doc.setTextColor(...RUST);
-        doc.text('$' + amt.toFixed(2), W - 40, y + 15, { align: 'right' });
+        if (idx % 2 === 1) { doc.setFillColor(251, 251, 251); doc.rect(MARGIN, y, W - MARGIN * 2, 24, 'F'); }
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.setTextColor(...BLACK);
+        doc.text(fmtDate(it.date), col1, y + 15);
+        doc.text(it.desc || '', col2, y + 15, { maxWidth: col3 - col2 - 65 });
+        doc.text('$' + it.amount.toFixed(2), col3, y + 15, { align: 'right' });
+        doc.setDrawColor(...LIGHT_GRAY);
+        doc.setLineWidth(0.3);
+        doc.line(MARGIN, y + 24, W - MARGIN, y + 24);
         y += 24;
       });
     }
 
-    // Totals
-    doc.setDrawColor(...INK); doc.setLineWidth(1); doc.line(0, y, W, y); y += 12;
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5);
-    [['Subtotal', '$' + subtotal.toFixed(2)], ['Tax (' + taxRate + '%)', '$' + tax.toFixed(2)]].forEach(([l, v]) => {
-      doc.setTextColor(...MUTED); doc.text(l, W - 200, y);
-      doc.setTextColor(...INK); doc.text(v, W - 40, y, { align: 'right' }); y += 15;
+    y += 8;
+
+    // Footer rows
+    const footerRows = [
+      ['Tax (' + taxRate + '%)', '$' + tax.toFixed(2)],
+      ...(tips > 0      ? [['Tips', '$' + tips.toFixed(2)]] : []),
+      ...(supplies > 0  ? [['Cleaning Supplies', '$' + supplies.toFixed(2)]] : []),
+    ];
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    footerRows.forEach(([label, value]) => {
+      doc.setTextColor(...DARK_GRAY);
+      doc.text(label, col3 - 4, y, { align: 'right' });
+      doc.setTextColor(...BLACK);
+      doc.text(value, col3, y, { align: 'right' });
+      y += 18;
     });
-    y += 3;
-    doc.setFillColor(...INK); doc.rect(0, y - 3, W, 27, 'F');
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(13);
-    doc.setTextColor(...PAPER); doc.text('TOTAL DUE', W - 200, y + 13);
-    doc.setTextColor(...RUST_L); doc.text('$' + total.toFixed(2), W - 40, y + 13, { align: 'right' });
-    y += 30;
 
-    // Footer
+    // Grand Total
+    y += 4;
+    doc.setDrawColor(...BLACK);
+    doc.setLineWidth(1.5);
+    doc.line(MARGIN, y, W - MARGIN, y);
     y += 14;
-    doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(...MUTED);
-    const note = document.getElementById('inv-note').value;
-    if (note) doc.text(note, 40, y, { maxWidth: W - 180 });
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(...RUST);
-    doc.text('Thank you!', W - 40, y, { align: 'right' });
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(...BLACK);
+    doc.text('Grand Total', col3 - 4, y, { align: 'right' });
+    doc.text('$' + grandTotal.toFixed(2), col3, y, { align: 'right' });
+    y += 24;
 
-    doc.save((document.getElementById('inv-number').value || 'invoice') + '.pdf');
+    // Remarks
+    if (note) {
+      y += 6;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(...MID_GRAY);
+      doc.text('Remarks: ' + note, MARGIN, y, { maxWidth: W - MARGIN * 2 });
+    }
+
+    doc.save((invNumber || 'invoice') + '.pdf');
   }
 </script>
 </body>
