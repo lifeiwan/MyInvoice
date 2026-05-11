@@ -278,26 +278,26 @@
 
   let itemCount = 0;
 
-  function addLineItem(desc='', hours='', rate='') {
+  function addLineItem(date='', desc='', amount='') {
     itemCount++;
     const id = itemCount;
+    const defaultDate = date || new Date().toISOString().split('T')[0];
+    const defaultDesc = desc || 'Cleaning Service';
     const container = document.getElementById('line-items');
     const div = document.createElement('div');
     div.className = 'line-item-row';
     div.id = 'item-' + id;
     div.innerHTML = `
       <div class="row-top">
-        <input class="li-input" data-role="desc" placeholder="e.g. Plumbing repair" value="${desc}" oninput="updatePreview()">
+        <input class="li-input" type="date" data-role="date" value="${defaultDate}" oninput="updatePreview()">
         <button class="remove-btn" onclick="removeItem(${id})">&#215;</button>
       </div>
       <div style="display:flex;gap:8px;">
-        <input class="li-input" data-role="qty" type="number" placeholder="Hours" min="0" step="0.5" value="${hours}" oninput="calcSub(${id});updatePreview()">
-        <input class="li-input" data-role="rate" type="number" placeholder="$/hr" min="0" step="1" value="${rate}" oninput="calcSub(${id});updatePreview()">
+        <input class="li-input" data-role="desc" placeholder="Cleaning Service" value="${defaultDesc}" oninput="updatePreview()" style="flex:2">
+        <input class="li-input" data-role="amount" type="number" placeholder="0.00" min="0" step="0.01" value="${amount}" oninput="updatePreview()" style="flex:1">
       </div>
-      <div class="line-subtotal" id="sub-${id}">Subtotal: <span>$0.00</span></div>
     `;
     container.appendChild(div);
-    calcSub(id);
     updatePreview();
   }
 
@@ -307,26 +307,24 @@
     updatePreview();
   }
 
-  function calcSub(id) {
-    const row = document.getElementById('item-' + id);
-    if (!row) return;
-    const h = parseFloat(row.querySelector('[data-role="qty"]').value) || 0;
-    const r = parseFloat(row.querySelector('[data-role="rate"]').value) || 0;
-    row.querySelector('#sub-' + id + ' span').textContent = '$' + (h * r).toFixed(2);
-  }
-
   function getItems() {
     return Array.from(document.querySelectorAll('.line-item-row')).map(row => ({
+      date: row.querySelector('[data-role="date"]').value,
       desc: row.querySelector('[data-role="desc"]').value,
-      hours: parseFloat(row.querySelector('[data-role="qty"]').value) || 0,
-      rate: parseFloat(row.querySelector('[data-role="rate"]').value) || 0,
+      amount: parseFloat(row.querySelector('[data-role="amount"]').value) || 0,
     }));
   }
 
   function fmtDate(val) {
     if (!val) return '—';
     const [y, m, d] = val.split('-');
-    return d + '/' + m + '/' + y;
+    return m + '/' + d + '/' + y;
+  }
+
+  function toggleSection(sectionId, toggle) {
+    const content = document.getElementById(sectionId);
+    const isOpen = content.classList.toggle('open');
+    toggle.classList.toggle('open', isOpen);
   }
 
   function updatePreview() {
