@@ -261,12 +261,7 @@
 </div>
 
 <script>
-  // Set default dates
-  const today = new Date();
-  const due = new Date(today);
-  due.setDate(due.getDate() + 30);
-  document.getElementById('inv-date').value = today.toISOString().split('T')[0];
-  document.getElementById('due-date').value = due.toISOString().split('T')[0];
+  document.getElementById('inv-date').value = new Date().toISOString().split('T')[0];
 
   let itemCount = 0;
 
