@@ -157,6 +157,30 @@
   .mp-count { margin-top: 10px; font-size: 10px; color: #555; text-align: center; }
   .mp-actions { display: flex; gap: 8px; margin-top: 14px; justify-content: flex-end; }
 
+  /* EMAIL MODAL */
+  #email-modal {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.78);
+    z-index: 1001; align-items: center; justify-content: center;
+  }
+  #email-modal.open { display: flex; }
+  .email-dialog {
+    background: #1e1e1a; border: 1px solid #444; border-radius: 10px;
+    padding: 26px; width: 500px; max-width: 92vw; display: flex; flex-direction: column; gap: 14px;
+  }
+  .email-dialog-title { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--paper); border-bottom: 1px solid #333; padding-bottom: 12px; }
+  .email-field { display: flex; flex-direction: column; gap: 4px; }
+  .email-field label { font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: #888; }
+  .email-field input, .email-field textarea {
+    background: #242420; border: 1px solid #333; border-radius: 4px;
+    padding: 8px 11px; font-family: 'DM Mono', monospace; font-size: 12px;
+    color: var(--paper); outline: none; width: 100%; transition: border-color 0.15s;
+  }
+  .email-field input:focus, .email-field textarea:focus { border-color: var(--rust); }
+  .email-field input[readonly] { color: #555; cursor: default; }
+  .email-field textarea { resize: vertical; min-height: 130px; line-height: 1.6; }
+  .email-attach { font-size: 10.5px; color: #666; display: flex; align-items: center; gap: 7px; padding: 6px 0; }
+  .email-attach-name { color: #999; }
+
   /* CUSTOMER DROPDOWN ROW */
   .cust-actions { display: flex; gap: 6px; align-items: center; margin-bottom: 9px; }
   .cust-actions select { flex: 1; background: #242420; border: 1px solid #333; border-radius: 4px; padding: 7px 10px; font-family: 'DM Mono', monospace; font-size: 11.5px; color: var(--paper); outline: none; }
@@ -164,7 +188,6 @@
   .btn-small:hover { border-color: var(--rust); color: var(--rust-light); }
   .btn-small.danger:hover { border-color: #c0392b; color: #e74c3c; }
   .btn-small:disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
-  .btn-email { opacity: 0.4; cursor: not-allowed; }
 </style>
 </head>
 <body>
@@ -196,6 +219,29 @@
     <div class="divider"></div>
 
     <div>
+      <div class="section-toggle" onclick="toggleSection('smtp-section', this)">
+        <div class="section-title" style="margin:0">Email Settings</div>
+        <span class="toggle-arrow">&#9654;</span>
+      </div>
+      <div class="collapsible-content" id="smtp-section">
+        <div class="field-group" style="padding-top:10px;">
+          <div class="field"><label>Brevo API Key</label><input type="password" id="smtp-apikey" placeholder="xkeysib-…"></div>
+          <div class="field"><label>Sender Email (verified in Brevo)</label><input type="email" id="smtp-sender" placeholder="tech.ccroyal@gmail.com"></div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <button class="btn-small" onclick="saveEmailSettings()">Save</button>
+            <span id="smtp-status" style="font-size:10px;color:#555;"></span>
+          </div>
+          <div style="font-size:9.5px;color:#444;line-height:1.6;">
+            brevo.com → Settings → API Keys → Generate a key.<br>
+            Also add your sender email under Brevo → Senders &amp; Domains.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div>
       <div class="section-title">Invoice Details</div>
       <div class="field-group">
         <div class="field"><label>Invoice #</label><input type="text" id="inv-number" placeholder="e.g. WE041326" oninput="updatePreview()"></div>
@@ -218,7 +264,7 @@
         <div class="field"><label>Full Name</label><input type="text" id="cust-name" placeholder="WeEducation Group Inc." oninput="updatePreview()"></div>
         <div class="field"><label>Address</label><input type="text" id="cust-address" placeholder="1271 Broadway FL 2, New York, NY 10001" oninput="updatePreview()"></div>
         <div class="field"><label>Phone</label><input type="text" id="cust-phone" placeholder="(833) 384-5777" oninput="updatePreview()"></div>
-        <div class="field"><label>Email</label><input type="text" id="cust-email" placeholder="" oninput="updatePreview()"></div>
+        <div class="field"><label>Email</label><input type="text" id="cust-email" placeholder="email1@example.com, email2@example.com" oninput="updatePreview()"></div>
       </div>
     </div>
 
@@ -259,7 +305,7 @@
     <div class="export-btns">
       <button class="btn-primary" onclick="exportPDF()">&#8595; Export PDF</button>
       <button class="btn-secondary" onclick="exportCSV()">&#8595; Export CSV</button>
-      <button class="btn-secondary btn-email" title="Coming soon — EmailJS integration" disabled>&#9993; Send Email</button>
+      <button class="btn-secondary" onclick="sendEmail()">&#9993; Send Email</button>
     </div>
   </div>
 
@@ -333,6 +379,37 @@
     <div class="mp-actions">
       <button class="btn-secondary" style="flex:none;padding:8px 16px;font-size:11px;" onclick="closeMultiPicker()">Cancel</button>
       <button id="mp-confirm-btn" class="btn-primary" style="flex:none;padding:8px 16px;font-size:11px;" onclick="confirmMultiPicker()">Add Items</button>
+    </div>
+  </div>
+</div>
+
+<!-- Email compose modal -->
+<div id="email-modal">
+  <div class="email-dialog">
+    <div class="email-dialog-title">&#9993; Send Invoice</div>
+    <div class="email-field">
+      <label>From</label>
+      <input type="email" id="em-from" readonly>
+    </div>
+    <div class="email-field">
+      <label>To (comma-separate multiple)</label>
+      <input type="text" id="em-to">
+    </div>
+    <div class="email-field">
+      <label>Subject</label>
+      <input type="text" id="em-subject">
+    </div>
+    <div class="email-field">
+      <label>Body</label>
+      <textarea id="em-body"></textarea>
+    </div>
+    <div class="email-attach">
+      <span>&#128206;</span>
+      <span class="email-attach-name" id="em-attach-name"></span>
+    </div>
+    <div class="mp-actions">
+      <button class="btn-secondary" style="flex:none;padding:8px 18px;font-size:11px;" onclick="closeEmailModal()">Cancel</button>
+      <button class="btn-primary" style="flex:none;padding:8px 18px;font-size:11px;" onclick="confirmSendEmail()">Send</button>
     </div>
   </div>
 </div>
@@ -529,6 +606,7 @@
   populateDropdown();
   addLineItem();
   autoInvoiceNumber();
+  initEmailSettings();
 
   // ---- CSV EXPORT ----
   function exportCSV() {
@@ -577,7 +655,7 @@
   }
 
   // ---- PDF EXPORT ----
-  function exportPDF() {
+  function buildPDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit: 'pt', format: 'letter' });
     const W = doc.internal.pageSize.getWidth();
@@ -771,6 +849,12 @@
       doc.text('Remarks: ' + note, MARGIN, y, { maxWidth: W - MARGIN * 2 });
     }
 
+    return doc;
+  }
+
+  function exportPDF() {
+    const doc = buildPDF();
+    const invNumber = document.getElementById('inv-number').value;
     doc.save((invNumber || 'invoice') + '.pdf');
   }
 
@@ -869,6 +953,131 @@
 
   function closeMultiPicker() {
     document.getElementById('multi-date-modal').classList.remove('open');
+  }
+
+  // ---- EMAIL SETTINGS ----
+  const SMTP_KEY = 'invoice_smtp';
+
+  function saveEmailSettings() {
+    const apiKey     = document.getElementById('smtp-apikey').value.trim();
+    const senderEmail = document.getElementById('smtp-sender').value.trim();
+    if (!apiKey)      { alert('Paste your Brevo API key first.'); return; }
+    if (!senderEmail) { alert('Enter the sender email verified in Brevo.'); return; }
+    localStorage.setItem(SMTP_KEY, JSON.stringify({ apiKey, senderEmail }));
+    const status = document.getElementById('smtp-status');
+    status.textContent = 'Saved ✓';
+    status.style.color = '#4caf50';
+  }
+
+  function initEmailSettings() {
+    try {
+      const s = JSON.parse(localStorage.getItem(SMTP_KEY) || 'null');
+      if (s && s.apiKey) {
+        document.getElementById('smtp-apikey').value = s.apiKey;
+        document.getElementById('smtp-sender').value = s.senderEmail || '';
+        const status = document.getElementById('smtp-status');
+        status.textContent = 'Configured ✓';
+        status.style.color = '#4caf50';
+      }
+    } catch {}
+  }
+
+  // ---- SEND EMAIL ----
+  let _emailPdfB64 = '';
+  let _emailFilename = '';
+
+  function sendEmail() {
+    let smtp;
+    try { smtp = JSON.parse(localStorage.getItem(SMTP_KEY) || 'null'); } catch {}
+    if (!smtp || !smtp.apiKey) {
+      alert('Please configure your Brevo API key in Email Settings first.');
+      return;
+    }
+
+    const invNumber = document.getElementById('inv-number').value;
+    const bizName   = document.getElementById('biz-name').value || 'C&C Royal Service';
+    const bizEmail  = smtp.senderEmail || document.getElementById('biz-email').value.trim();
+    const custName  = document.getElementById('cust-name').value;
+    const custEmail = document.getElementById('cust-email').value.trim();
+
+    const subject = 'Invoice' + (invNumber ? ' #' + invNumber : '') + ' from ' + bizName;
+    const body = [
+      'Dear ' + (custName || 'Valued Customer') + ',',
+      '',
+      'Please find attached your invoice' + (invNumber ? ' #' + invNumber : '') + '.',
+      '',
+      'If you have any questions, please feel free to contact us.',
+      '',
+      'Best regards,',
+      bizName,
+    ].join('\n');
+
+    _emailFilename = (invNumber || 'invoice') + '.pdf';
+    _emailPdfB64   = buildPDF().output('datauristring').split(',')[1];
+
+    document.getElementById('em-from').value    = bizEmail;
+    document.getElementById('em-to').value      = custEmail;
+    document.getElementById('em-subject').value = subject;
+    document.getElementById('em-body').value    = body;
+    document.getElementById('em-attach-name').textContent = _emailFilename;
+
+    document.getElementById('email-modal').classList.add('open');
+  }
+
+  function closeEmailModal() {
+    document.getElementById('email-modal').classList.remove('open');
+  }
+
+  function confirmSendEmail() {
+    let smtp;
+    try { smtp = JSON.parse(localStorage.getItem(SMTP_KEY) || 'null'); } catch {}
+    if (!smtp || !smtp.apiKey) return;
+
+    const toRaw   = document.getElementById('em-to').value.trim();
+    const subject = document.getElementById('em-subject').value.trim();
+    const body    = document.getElementById('em-body').value.replace(/\n/g, '<br>');
+    const fromEmail = document.getElementById('em-from').value.trim();
+    const bizName   = document.getElementById('biz-name').value || 'C&C Royal Service';
+
+    if (!toRaw) { alert('Please enter a recipient email address.'); return; }
+
+    const toList = toRaw.split(',').map(e => ({ email: e.trim() })).filter(e => e.email);
+
+    const sendBtn = document.querySelector('#email-modal .btn-primary');
+    sendBtn.textContent = 'Sending…';
+    sendBtn.disabled = true;
+
+    fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'api-key': smtp.apiKey,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        sender: { name: bizName, email: fromEmail },
+        to: toList,
+        subject: subject,
+        htmlContent: body,
+        attachment: [{ content: _emailPdfB64, name: _emailFilename }],
+      }),
+    })
+    .then(res => res.json())
+    .then(data => {
+      sendBtn.textContent = 'Send';
+      sendBtn.disabled = false;
+      if (data.messageId) {
+        closeEmailModal();
+        alert('Email sent to ' + toRaw + '.');
+      } else {
+        alert('Failed to send:\n' + (data.message || JSON.stringify(data)));
+      }
+    })
+    .catch(err => {
+      sendBtn.textContent = 'Send';
+      sendBtn.disabled = false;
+      alert('Error: ' + err.message + '\n\nMake sure the page is opened via http://localhost, not file://');
+    });
   }
 </script>
 </body>
