@@ -1007,6 +1007,18 @@
     } catch {}
   }
 
+  function getServiceMonth() {
+    const dates = getItems().map(it => it.date).filter(Boolean);
+    const source = dates.length ? dates : [document.getElementById('inv-date').value].filter(Boolean);
+    const months = [...new Set(source.map(d => {
+      const dt = new Date(d + 'T00:00:00');
+      return dt.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+    }))];
+    if (months.length === 0) return '';
+    if (months.length === 1) return months[0];
+    return months.slice(0, -1).join(', ') + ' and ' + months[months.length - 1];
+  }
+
   // ---- SEND EMAIL ----
   let _emailPdfB64 = '';
   let _emailFilename = '';
@@ -1026,10 +1038,12 @@
     const custEmail = document.getElementById('cust-email').value.trim();
 
     const subject = 'Invoice' + (invNumber ? ' #' + invNumber : '') + ' from ' + bizName;
+    const serviceMonth = getServiceMonth();
     const body = [
-      'Dear ' + (custName || 'Valued Customer') + ',',
+      'Hello ' + (custName || 'Valued Customer') + ',',
       '',
-      'Please find attached your invoice' + (invNumber ? ' #' + invNumber : '') + '.',
+      'Please find attached invoice' + (invNumber ? ' #' + invNumber : '') +
+        (serviceMonth ? ' for cleaning services in ' + serviceMonth + '.' : '.'),
       '',
       'If you have any questions, please feel free to contact us.',
       '',
