@@ -225,8 +225,15 @@
       </div>
       <div class="collapsible-content" id="smtp-section">
         <div class="field-group" style="padding-top:10px;">
-          <div class="field"><label>Brevo API Key</label><input type="password" id="smtp-apikey" placeholder="xkeysib-…"></div>
+          <div class="field">
+            <label>Brevo API Key</label>
+            <div style="display:flex;gap:6px;">
+              <input type="password" id="smtp-apikey" placeholder="xkeysib-…" style="flex:1;">
+              <button class="btn-small" type="button" onclick="toggleApiKeyVis(this)">Show</button>
+            </div>
+          </div>
           <div class="field"><label>Sender Email (verified in Brevo)</label><input type="email" id="smtp-sender" placeholder="tech.ccroyal@gmail.com"></div>
+          <div class="field"><label>BCC (your tracking copy)</label><input type="email" id="smtp-bcc" placeholder="tech.ccroyal@gmail.com"></div>
           <div style="display:flex;align-items:center;gap:10px;">
             <button class="btn-small" onclick="saveEmailSettings()">Save</button>
             <span id="smtp-status" style="font-size:10px;color:#555;"></span>
@@ -394,6 +401,10 @@
     <div class="email-field">
       <label>To (comma-separate multiple)</label>
       <input type="text" id="em-to">
+    </div>
+    <div class="email-field">
+      <label>BCC</label>
+      <input type="text" id="em-bcc">
     </div>
     <div class="email-field">
       <label>Subject</label>
@@ -958,12 +969,20 @@
   // ---- EMAIL SETTINGS ----
   const SMTP_KEY = 'invoice_smtp';
 
+  function toggleApiKeyVis(btn) {
+    const input = document.getElementById('smtp-apikey');
+    const show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    btn.textContent = show ? 'Hide' : 'Show';
+  }
+
   function saveEmailSettings() {
     const apiKey     = document.getElementById('smtp-apikey').value.trim();
     const senderEmail = document.getElementById('smtp-sender').value.trim();
     if (!apiKey)      { alert('Paste your Brevo API key first.'); return; }
     if (!senderEmail) { alert('Enter the sender email verified in Brevo.'); return; }
-    localStorage.setItem(SMTP_KEY, JSON.stringify({ apiKey, senderEmail }));
+    const bcc = document.getElementById('smtp-bcc').value.trim();
+    localStorage.setItem(SMTP_KEY, JSON.stringify({ apiKey, senderEmail, bcc }));
     const status = document.getElementById('smtp-status');
     status.textContent = 'Saved ✓';
     status.style.color = '#4caf50';
@@ -975,9 +994,15 @@
       if (s && s.apiKey) {
         document.getElementById('smtp-apikey').value = s.apiKey;
         document.getElementById('smtp-sender').value = s.senderEmail || '';
+        document.getElementById('smtp-bcc').value    = s.bcc || '';
         const status = document.getElementById('smtp-status');
         status.textContent = 'Configured ✓';
         status.style.color = '#4caf50';
+        // Auto-expand the section so the user can see it loaded
+        const section = document.getElementById('smtp-section');
+        const toggle  = section.previousElementSibling;
+        section.classList.add('open');
+        toggle.classList.add('open');
       }
     } catch {}
   }
@@ -1017,6 +1042,7 @@
 
     document.getElementById('em-from').value    = bizEmail;
     document.getElementById('em-to').value      = custEmail;
+    document.getElementById('em-bcc').value     = smtp.bcc || '';
     document.getElementById('em-subject').value = subject;
     document.getElementById('em-body').value    = body;
     document.getElementById('em-attach-name').textContent = _emailFilename;
@@ -1033,15 +1059,17 @@
     try { smtp = JSON.parse(localStorage.getItem(SMTP_KEY) || 'null'); } catch {}
     if (!smtp || !smtp.apiKey) return;
 
-    const toRaw   = document.getElementById('em-to').value.trim();
-    const subject = document.getElementById('em-subject').value.trim();
-    const body    = document.getElementById('em-body').value.replace(/\n/g, '<br>');
+    const toRaw     = document.getElementById('em-to').value.trim();
+    const bccRaw    = document.getElementById('em-bcc').value.trim();
+    const subject   = document.getElementById('em-subject').value.trim();
+    const body      = document.getElementById('em-body').value.replace(/\n/g, '<br>');
     const fromEmail = document.getElementById('em-from').value.trim();
     const bizName   = document.getElementById('biz-name').value || 'C&C Royal Service';
 
     if (!toRaw) { alert('Please enter a recipient email address.'); return; }
 
-    const toList = toRaw.split(',').map(e => ({ email: e.trim() })).filter(e => e.email);
+    const toList  = toRaw.split(',').map(e => ({ email: e.trim() })).filter(e => e.email);
+    const bccList = bccRaw ? bccRaw.split(',').map(e => ({ email: e.trim() })).filter(e => e.email) : [];
 
     const sendBtn = document.querySelector('#email-modal .btn-primary');
     sendBtn.textContent = 'Sending…';
@@ -1057,6 +1085,7 @@
       body: JSON.stringify({
         sender: { name: bizName, email: fromEmail },
         to: toList,
+        ...(bccList.length ? { bcc: bccList } : {}),
         subject: subject,
         htmlContent: body,
         attachment: [{ content: _emailPdfB64, name: _emailFilename }],
