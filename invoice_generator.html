@@ -496,15 +496,19 @@
     return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
-  const INV_PREFIX = Array.from({length: 5}, () =>
-    String.fromCharCode(65 + Math.floor(Math.random() * 26))
-  ).join('');
+  function randomPrefix() {
+    return Array.from({length: 5}, () =>
+      String.fromCharCode(65 + Math.floor(Math.random() * 26))
+    ).join('');
+  }
+
+  let invPrefix = randomPrefix();
 
   function autoInvoiceNumber() {
     const val = document.getElementById('inv-date').value;
     if (val) {
       const [y, m, d] = val.split('-');
-      document.getElementById('inv-number').value = INV_PREFIX + m + d + y.slice(2);
+      document.getElementById('inv-number').value = invPrefix + m + d + y.slice(2);
     }
     updatePreview();
   }
