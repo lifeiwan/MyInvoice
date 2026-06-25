@@ -945,10 +945,25 @@
     return doc;
   }
 
-  function exportPDF() {
-    const doc = buildPDF();
+  async function exportPDF() {
     const invNumber = document.getElementById('inv-number').value;
-    doc.save((invNumber || 'invoice') + '.pdf');
+    const blob = buildPDF().output('blob');
+    if (window.showSaveFilePicker) {
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: (invNumber || 'invoice') + '.pdf',
+          types: [{ description: 'PDF', accept: { 'application/pdf': ['.pdf'] } }],
+        });
+        const writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+      } catch {}
+    } else {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = (invNumber || 'invoice') + '.pdf';
+      a.click();
+    }
   }
 
   // ---- MULTI-DATE PICKER ----
