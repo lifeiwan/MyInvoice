@@ -703,7 +703,7 @@
   initEmailSettings();
 
   // ---- CSV EXPORT ----
-  function exportCSV() {
+  async function exportCSV() {
     const items = getItems();
     const taxRate = parseFloat(document.getElementById('tax-rate').value) || 0;
     const subtotal = items.reduce((s, it) => s + it.amount, 0);
@@ -741,11 +741,24 @@
       ['Remarks', document.getElementById('inv-note').value],
     ];
     const csv = rows.map(r => r.map(q).join(',')).join('\n');
+    const invNumber = document.getElementById('inv-number').value;
     const blob = new Blob([csv], { type: 'text/csv' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = (document.getElementById('inv-number').value || 'invoice') + '.csv';
-    a.click();
+    if (window.showSaveFilePicker) {
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: (invNumber || 'invoice') + '.csv',
+          types: [{ description: 'CSV', accept: { 'text/csv': ['.csv'] } }],
+        });
+        const writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+      } catch {}
+    } else {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = (invNumber || 'invoice') + '.csv';
+      a.click();
+    }
   }
 
   // ---- PDF EXPORT ----
