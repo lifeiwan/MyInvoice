@@ -314,7 +314,7 @@
         </div>
         <div class="field">
           <label>Remarks</label>
-          <textarea id="inv-note" oninput="updatePreview()">The total payment is due by [date]</textarea>
+          <textarea id="inv-note" oninput="updatePreview()"></textarea>
         </div>
       </div>
     </div>
@@ -516,6 +516,16 @@
     updatePreview();
   }
 
+  function defaultRemarks() {
+    const due = new Date();
+    due.setDate(due.getDate() + 15);
+    return 'The total payment is due by ' + fmtDate(
+      due.getFullYear() + '-' +
+      String(due.getMonth() + 1).padStart(2, '0') + '-' +
+      String(due.getDate()).padStart(2, '0')
+    );
+  }
+
   function newInvoice() {
     if (!confirm('Start a new invoice? Current data will be cleared.')) return;
 
@@ -536,6 +546,8 @@
 
     document.getElementById('line-items').innerHTML = '';
     addLineItem();
+
+    document.getElementById('inv-note').value = defaultRemarks();
 
     updatePreview();
   }
@@ -700,6 +712,7 @@
   populateDropdown();
   addLineItem();
   autoInvoiceNumber();
+  document.getElementById('inv-note').value = defaultRemarks();
   initEmailSettings();
 
   // ---- CSV EXPORT ----
