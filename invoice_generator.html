@@ -519,11 +519,8 @@
   function defaultRemarks() {
     const due = new Date();
     due.setDate(due.getDate() + 15);
-    return 'The total payment is due by ' + fmtDate(
-      due.getFullYear() + '-' +
-      String(due.getMonth() + 1).padStart(2, '0') + '-' +
-      String(due.getDate()).padStart(2, '0')
-    );
+    const label = due.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    return 'The total payment is due by ' + label;
   }
 
   function newInvoice() {
